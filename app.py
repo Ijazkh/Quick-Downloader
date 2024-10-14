@@ -5,13 +5,13 @@ import yt_dlp as youtube_dl
 app = Flask(__name__)
 
 # HTML template
-HTML_TEMPLATE = """
-<!DOCTYPE html>
+HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QuickDownloader</title>
+    
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -74,6 +74,36 @@ HTML_TEMPLATE = """
             border: 1px solid #b3d4fc;
             border-radius: 5px;
         }
+        /* Spinner Styling */
+        .spinner-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(255, 255, 255, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .contuner-all{
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 90%;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -96,6 +126,12 @@ HTML_TEMPLATE = """
             </select>
             <button id="downloadButton">Download</button>
         </div>
+
+        <!-- Spinner container -->
+        <div id="spinnerContainer" class="spinner-container">
+            <div class="spinner"></div>
+        </div>
+
         <div id="progressContainer" class="hidden">
             <p id="progressText">Preparing download...</p>
             <progress id="downloadProgress" value="0" max="100"></progress>
@@ -103,7 +139,8 @@ HTML_TEMPLATE = """
         <div id="resultContainer" class="hidden">
             <p id="resultText">Download complete! <a id="downloadLink" href="#" download>Click here</a> to download your file.</p>
         </div>
-        <div class="platforms">
+
+        <div class="platforms contuner-all">
             <h3>Supported Platforms:</h3>
             <ul>
                 <li>YouTube: Download videos, playlists, and live streams.</li>
@@ -133,6 +170,8 @@ HTML_TEMPLATE = """
                 return;
             }
 
+            // Show spinner
+            document.getElementById('spinnerContainer').style.display = 'flex';
             document.getElementById('progressContainer').classList.remove('hidden');
             document.getElementById('resultContainer').classList.add('hidden');
 
@@ -147,23 +186,25 @@ HTML_TEMPLATE = """
             .then(data => {
                 if (data.error) {
                     alert('Error: ' + data.error);
-                    document.getElementById('progressContainer').classList.add('hidden');
+                    document.getElementById('spinnerContainer').style.display = 'none';
                 } else {
                     document.getElementById('progressText').innerText = 'Download complete!';
                     document.getElementById('downloadProgress').value = 100;
                     document.getElementById('downloadLink').href = data.filePath;
                     document.getElementById('resultContainer').classList.remove('hidden');
+                    document.getElementById('spinnerContainer').style.display = 'none';
                 }
             })
             .catch(error => {
                 alert('Error downloading file');
                 console.error('Error:', error);
-                document.getElementById('progressContainer').classList.add('hidden');
+                document.getElementById('spinnerContainer').style.display = 'none';
             });
         });
     </script>
 </body>
 </html>
+
 """
 
 
@@ -172,6 +213,7 @@ def download_media(url, download_type, quality):
     download_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'downloads')
     if not os.path.exists(download_folder):
         os.makedirs(download_folder)
+        
 
     ydl_opts = {
         'format': 'best' if download_type == 'video' else 'bestaudio',
